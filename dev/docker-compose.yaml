@@ -1,6 +1,8 @@
 # Local demo: NetBox with the plugin from this checkout and seeded devices/locations.
 #   docker compose up -d   →  http://localhost:8010  (admin / admin)
 #   smoke test: docker compose exec netbox sh -c "/opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py shell < /demo/smoke.py"
+name: netbox-list-edit
+
 x-netbox: &netbox
   image: ghcr.io/netbox-community/netbox:${NETBOX_VERSION:-v4.6.5}
   user: root
