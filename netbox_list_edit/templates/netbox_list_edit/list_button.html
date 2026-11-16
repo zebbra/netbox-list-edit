@@ -8,11 +8,19 @@
 <script>
   (function () {
     const tpl = document.getElementById('list-edit-button');
+    function actionUrl(button) {
+      // HTMX table updates (per page, sorting, quick search) refresh the return URL; carry its query
+      const ret = document.getElementById('object-list-return-url');
+      const base = button.getAttribute('formaction').split('?')[0];
+      const query = ret && ret.value.includes('?') ? ret.value.split('?')[1] : '';
+      return query ? base + '?' + query : base;
+    }
     function place() {
       document.querySelectorAll('form .bulk-action-buttons').forEach(function (container) {
         if (container.querySelector('[name=_list_edit]')) return;
         const anchor = container.querySelector('[name=_rename], [name=_edit]');
         const button = tpl.content.firstElementChild.cloneNode(true);
+        button.setAttribute('formaction', actionUrl(button));
         if (anchor) anchor.after(button); else container.prepend(button);
         // NetBox enables/disables the bulk buttons with the selection; follow a sibling's state
         const sibling = container.querySelector('button:not([name=_list_edit])');
@@ -24,5 +32,7 @@
       });
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', place); else place();
+    // HTMX replaces .bulk-action-buttons out-of-band on table updates, dropping the button
+    document.addEventListener('htmx:afterSettle', place);
   })();
 </script>
