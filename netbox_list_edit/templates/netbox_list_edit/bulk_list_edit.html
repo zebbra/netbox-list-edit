@@ -50,7 +50,7 @@
             <tbody>
               {% for row in preview %}
                 <tr>
-                  <td>{{ row.object|linkify }}</td>
+                  <td class="text-nowrap">{{ row.object|linkify }}</td>
                   <td>
                     {% for label, url, removed in row.old %}
                       <span class="badge {% if removed %}text-bg-red text-decoration-line-through{% else %}text-bg-secondary{% endif %}">{% if url %}<a href="{{ url }}" class="text-reset">{{ label }}</a>{% else %}{{ label }}{% endif %}</span>
