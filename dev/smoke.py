@@ -1,6 +1,7 @@
 # End-to-end checks against the seeded demo, run inside the NetBox container:
 #   docker compose exec netbox sh -c '/opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py shell < /demo/smoke.py'
 # Resets to the seeded state and runs in a transaction that is rolled back at the end.
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.test import Client
@@ -10,6 +11,7 @@ from dcim.models import Device, Location, Site
 from users.models import ObjectPermission
 
 URL = '/plugins/list-edit/{}/'
+settings.ALLOWED_HOSTS = [*settings.ALLOWED_HOSTS, 'testserver']  # Django test client host
 User = get_user_model()
 
 
