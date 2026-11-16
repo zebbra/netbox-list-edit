@@ -20,7 +20,9 @@ Extend the generic bulk edit form with add/remove controls for custom fields of 
 
 Data model and API stay unchanged; the values remain lists in `custom_field_data`. The REST API already allows read-modify-write per object; this is about the UI bulk edit.
 
-A working implementation exists as a plugin: <link to repo>. It adds a separate view with a preview (old → new per object, similar to bulk rename) and works for all models with custom fields, including plugin models. For core, the add/remove inputs would fit directly into `BulkEditView` / `NetBoxModelBulkEditForm`, like the contacts change in #23672.
+A working implementation exists as a plugin: https://github.com/zebbra/netbox-list-edit. It adds a separate view with a preview (old → new per object, similar to bulk rename) and works for all models with custom fields, including plugin models. For core, the add/remove inputs would fit directly into `BulkEditView` / `NetBoxModelBulkEditForm`, like the contacts change in #23672.
+
+**Possible extension, feedback welcome:** the same pattern would also fit built-in many-to-many fields that bulk edit can only overwrite today, e.g. `Site.asns`, VRF/L2VPN import/export targets or `Service.ipaddresses`. Some of these have validation rules that live in their forms (as `add_tagged_vlans` / `remove_tagged_vlans` do for interfaces), so they would need add/remove fields in the respective bulk edit forms rather than one generic mechanism. We would be happy to extend the scope to these fields, but would like to hear first whether the maintainers prefer starting with custom fields only or covering both in one go.
 
 ### Use case
 
