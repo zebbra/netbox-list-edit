@@ -1,0 +1,28 @@
+{% load i18n %}
+{# Rendered with the list's top buttons, which sit outside the object list form; moved next to the bulk buttons. #}
+<template id="list-edit-button">
+  <button type="submit" name="_list_edit" formaction="{{ url }}" class="btn btn-yellow" title="{% trans 'Add, remove or replace values of multi-select and multi-object custom fields' %}">
+    <i class="mdi mdi-playlist-edit" aria-hidden="true"></i> {% trans "Edit List Fields" %}
+  </button>
+</template>
+<script>
+  (function () {
+    const tpl = document.getElementById('list-edit-button');
+    function place() {
+      document.querySelectorAll('form .bulk-action-buttons').forEach(function (container) {
+        if (container.querySelector('[name=_list_edit]')) return;
+        const anchor = container.querySelector('[name=_rename], [name=_edit]');
+        const button = tpl.content.firstElementChild.cloneNode(true);
+        if (anchor) anchor.after(button); else container.prepend(button);
+        // NetBox enables/disables the bulk buttons with the selection; follow a sibling's state
+        const sibling = container.querySelector('button:not([name=_list_edit])');
+        if (sibling) {
+          const sync = function () { button.disabled = sibling.disabled; };
+          sync();
+          new MutationObserver(sync).observe(sibling, {attributes: true, attributeFilter: ['disabled']});
+        }
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', place); else place();
+  })();
+</script>

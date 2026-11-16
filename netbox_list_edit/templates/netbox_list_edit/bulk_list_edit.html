@@ -1,0 +1,139 @@
+{% extends 'generic/_base.html' %}
+{% load helpers %}
+{% load form_helpers %}
+{% load i18n %}
+
+{% block title %}
+  {% blocktrans trimmed with count=selected_count object_type=model|meta:"verbose_name_plural"|bettertitle %}
+    Editing list fields of {{ count }} {{ object_type }}
+  {% endblocktrans %}
+{% endblock %}
+
+{% block tabs %}
+  <ul class="nav nav-tabs">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" type="button" role="tab" aria-selected="true">
+        {% trans "Edit List Fields" %}
+      </button>
+    </li>
+  </ul>
+{% endblock tabs %}
+
+{% block content %}
+{% if skipped_count > 0 %}
+  <div class="alert alert-warning">
+    {% blocktrans trimmed count count=skipped_count %}
+      {{ count }} selected object is skipped because you lack permission to change it.
+    {% plural %}
+      {{ count }} selected objects are skipped because you lack permission to change them.
+    {% endblocktrans %}
+  </div>
+{% endif %}
+<div class="row mb-3">
+  <div class="col col-md-7">
+    {% if preview is not None %}
+      <div class="card">
+        <h2 class="card-header">
+          {% blocktrans trimmed with changed=preview|length total=selected_count %}
+            {{ changed }} of {{ total }} objects change
+          {% endblocktrans %}
+        </h2>
+        {% if preview %}
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>{{ model|meta:"verbose_name"|bettertitle }}</th>
+                <th>{% blocktrans with field=custom_field %}Current {{ field }}{% endblocktrans %}</th>
+                <th>{% blocktrans with field=custom_field %}New {{ field }}{% endblocktrans %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in preview %}
+                <tr>
+                  <td>{{ row.object|linkify }}</td>
+                  <td>
+                    {% for label, url, removed in row.old %}
+                      <span class="badge {% if removed %}text-bg-red text-decoration-line-through{% else %}text-bg-secondary{% endif %}">{% if url %}<a href="{{ url }}" class="text-reset">{{ label }}</a>{% else %}{{ label }}{% endif %}</span>
+                    {% empty %}
+                      {{ ''|placeholder }}
+                    {% endfor %}
+                  </td>
+                  <td>
+                    {% for label, url, added in row.new %}
+                      <span class="badge {% if added %}text-bg-green{% else %}text-bg-secondary{% endif %}">{% if url %}<a href="{{ url }}" class="text-reset">{{ label }}</a>{% else %}{{ label }}{% endif %}</span>
+                    {% empty %}
+                      {{ ''|placeholder }}
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="card-body text-muted">{% trans "None of the selected objects would change." %}</div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="card">
+        <div class="card-body text-muted">
+          {% blocktrans trimmed with count=selected_count object_type=model|meta:"verbose_name_plural" %}
+            {{ count }} {{ object_type }} selected. Choose values to remove and/or add, then preview the changes.
+            Removals are applied before additions. Objects that would not change are left untouched.
+          {% endblocktrans %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="col col-md-5">
+    <form action="" method="post" class="form form-horizontal" id="list-edit-form">
+      {% csrf_token %}
+      {% for pk in selected_pks %}<input type="hidden" name="pk" value="{{ pk }}">{% endfor %}
+      <input type="hidden" name="return_url" value="{{ return_url }}">
+      {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      <div class="card">
+        <h2 class="card-header">{% trans "Values" %}</h2>
+        <div class="card-body">
+          {% render_field form.field %}
+          {% render_field form.remove %}
+          {% render_field form.add %}
+          {% render_field form.replace %}
+          {% if form.changelog_message %}
+            <div class="bg-primary-subtle border border-primary rounded-1 pt-3 px-3 mb-3">
+              {% render_field form.changelog_message %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col col-md-12 my-3 text-end">
+        <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+        <button type="submit" name="_preview" class="btn btn-primary">{% trans "Preview" %}</button>
+        {% if preview %}
+          <button type="submit" name="_apply" class="btn btn-primary" id="list-edit-apply">{% trans "Apply" %}</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  (function () {
+    const form = document.getElementById('list-edit-form');
+    // Switching the custom field reloads the form with the matching value widgets
+    form.querySelector('[data-list-edit-switch]').addEventListener('change', function () {
+      form.submit();
+    });
+    // Apply only what was previewed: hide the button once the values change
+    const apply = document.getElementById('list-edit-apply');
+    if (apply) {
+      form.querySelectorAll('select, input[type=checkbox]').forEach(function (el) {
+        el.addEventListener('change', function () { apply.remove(); });
+      });
+    }
+  })();
+</script>
+{% endblock content %}

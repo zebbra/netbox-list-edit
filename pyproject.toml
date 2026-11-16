@@ -1,0 +1,23 @@
+[project]
+name = "netbox-list-edit"
+version = "0.1.0"
+description = "NetBox plugin to add, remove or replace single values of multi-select and multi-object custom fields in bulk"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Stefan Grosser" }]
+requires-python = ">=3.10"
+classifiers = ["Framework :: Django", "Programming Language :: Python :: 3"]
+
+[project.urls]
+Homepage = "https://github.com/zebbra/netbox-list-edit"
+Repository = "https://github.com/zebbra/netbox-list-edit"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["netbox_list_edit"]
+
+[tool.setuptools.package-data]
+netbox_list_edit = ["templates/**/*.html"]
