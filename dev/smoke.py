@@ -1,6 +1,8 @@
 # End-to-end checks against the seeded demo, run inside the NetBox container:
 #   docker compose exec netbox sh -c '/opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py shell < /demo/smoke.py'
 # Resets to the seeded state and runs in a transaction that is rolled back at the end.
+import time
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -64,7 +66,7 @@ try:
         check(oc and oc.message == 'drop rf' and oc.user == admin, 'changelog entry with message')
 
         # 2. Replace on all devices: only those with the old value change, at the same position
-        all_pks = list(Device.objects.values_list('pk', flat=True))
+        all_pks = list(Device.objects.exclude(role__slug='access-point').values_list('pk', flat=True))
         data = {'pk': all_pks, 'field': 'monitoring_modules', 'loaded_field': 'monitoring_modules',
                 'remove': ['cisco_envmon'], 'add': ['cisco_envmon_v2'], 'replace': 'on'}
         r = c.post(URL.format('dcim/device'), {**data, '_preview': ''})
@@ -81,7 +83,23 @@ try:
         c.post(URL.format('dcim/device'), {**data, '_apply': ''})
         check(modules('rt-gva-01') == ['if_mib', 'cisco_sdwan'] and modules('rt-brn-01') is None, 'add to sdwan only')
 
-        # 4. Second model, multi-object field: add and remove sites on locations
+        # 4. Scale: select all 1000 access points (more than one page) and add a value
+        r = c.post(URL.format('dcim/device') + '?role=access-point', {'_all': 'on'})
+        aps = Device.objects.filter(role__slug='access-point')
+        ap_pks = list(aps.values_list('pk', flat=True))
+        check(r.status_code == 200 and len(ap_pks) == 1000 and r.content.count(b'name="pk"') == 1000,
+              'form opens for all 1000 access points')
+        missing = sum('cisco_cpu' not in (d.custom_field_data.get('monitoring_modules') or []) for d in aps)
+        data = {'pk': ap_pks, 'field': 'monitoring_modules', 'loaded_field': 'monitoring_modules', 'add': ['cisco_cpu']}
+        r = c.post(URL.format('dcim/device'), {**data, '_preview': ''})
+        check(f'{missing} of 1000 objects change'.encode() in r.content, f'scale preview: {missing} of 1000 change')
+        t = time.monotonic()
+        c.post(URL.format('dcim/device'), {**data, '_apply': ''})
+        elapsed = time.monotonic() - t
+        check(all('cisco_cpu' in d.custom_field_data['monitoring_modules'] for d in aps.all()),
+              f'scale apply: all 1000 have the value ({elapsed:.1f}s)')
+
+        # 5. Second model, multi-object field: add and remove sites on locations
         locs = list(Location.objects.filter(name__endswith='Floor 2').values_list('pk', flat=True))
         geneva, bern = Site.objects.get(name='Geneva'), Site.objects.get(name='Bern')
         data = {'pk': locs, 'field': 'backup_sites', 'loaded_field': 'backup_sites', 'add': [geneva.pk, bern.pk]}

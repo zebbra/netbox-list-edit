@@ -1,4 +1,6 @@
 # Demo data: list custom fields on devices and locations. Rerunning resets the values.
+import random
+
 from core.models import ObjectType
 from dcim.models import Device, DeviceRole, DeviceType, Location, Manufacturer, Site
 from extras.models import CustomField, CustomFieldChoiceSet
@@ -79,5 +81,25 @@ for site in sites:
         )[0]
         location.custom_field_data.update({'monitoring_modules': mods, 'backup_sites': None})
         location.save()
+
+# Bulk data: 1000 access points with random list values, to try paging and "select all" at scale.
+# Own role and device type, so the smoke test's hand-made devices above are not affected.
+rng = random.Random(42)
+choices = [c[0] for c in choice_set.extra_choices]
+ap_role = DeviceRole.objects.get_or_create(name='Access Point', defaults={'slug': 'access-point'})[0]
+c9120 = DeviceType.objects.get_or_create(
+    manufacturer=manufacturer, model='Catalyst 9120', defaults={'slug': 'catalyst-9120'}
+)[0]
+for i in range(1000):
+    site = sites[i % len(sites)]
+    device = Device.objects.get_or_create(
+        name=f'ap-{site.slug}-{i:04}', defaults={'device_type': c9120, 'role': ap_role, 'site': site}
+    )[0]
+    device.custom_field_data.update({
+        'monitoring_modules': rng.sample(choices, rng.randint(0, 3)) or None,
+        'service_group': None,
+        'backup_sites': [s.pk for s in rng.sample(sites, rng.randint(0, 2))] or None,
+    })
+    device.save()
 
 print('seeded')

@@ -20,6 +20,8 @@ Every object list whose model has a multi-select or multi-object custom field ge
 
 ![Remove preview](docs/preview-remove.png)
 
+![Add preview: multi-object field, select all across pages](docs/preview-add.png)
+
 | Operation | How |
 |---|---|
 | Add | Values in *Add*; objects that already have them are unchanged |
@@ -36,6 +38,7 @@ To exclude objects, use the list filters, e.g. `tag__n=pinned`.
 - Saved through the normal model save path: `full_clean()`, changelog (with optional message), event rules and webhooks.
 - Changes are computed from the current values at *Apply* time, so edits made between preview and apply are not overwritten.
 - Only custom fields with *UI editable* = Yes are offered.
+- Used in production for edits of ~800 devices at once.
 
 ## Install
 
@@ -53,9 +56,9 @@ No configuration, no database migrations. Tested with NetBox 4.6.
 
 ```sh
 cd dev
-docker compose up -d     # http://localhost:8010, admin / admin, seeded devices and locations
+docker compose up -d     # http://localhost:8010, admin / admin, seeded devices, locations and 1000 access points
 docker compose exec netbox sh -c "/opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py shell < /demo/smoke.py"
 uvx pytest tests         # list logic, no NetBox needed
 ```
 
-Code changes need `docker compose up -d --force-recreate netbox`. The smoke test runs end to end against devices and locations (multi-select and multi-object fields, select all, replace, permissions, changelog) and rolls back.
+Code changes need `docker compose up -d --force-recreate netbox`. The smoke test runs end to end against devices and locations (multi-select and multi-object fields, select all across 1000 objects, replace, permissions, changelog) and rolls back.
